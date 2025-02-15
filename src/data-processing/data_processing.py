@@ -58,6 +58,10 @@ def process_data(df: pd.DataFrame) -> pd.DataFrame:
     # Removing rows with no image:
     df = df[df["image"].apply(len) > 0]
     
+    #Resetting index
+    df.reset_index(drop=True, inplace=True)
+    df["post_id"] = df.index + 1
+    
     # Selecting only the first image if there are multiple images
     df["image"] = df["image"].apply(lambda x: x[0])
     
