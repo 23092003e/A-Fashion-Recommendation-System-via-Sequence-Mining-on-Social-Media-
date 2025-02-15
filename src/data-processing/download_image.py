@@ -16,14 +16,14 @@ def download_images(df, batch_size, delay):
 
     """
     # make sure the images directory exists
-    if not os.path.exists("images/original_images"):
-        os.makedirs("images/original_images")
+    if not os.path.exists("../image/original_images"):
+        os.makedirs("../image/original_images")
 
     # Iterate over the DataFrame rows with batch control
     for idx, row in df.iterrows():
         image_url = row["image"]
-        id = row["id"]
-        file_path = f"images/original_images/{id}.jpg"
+        id = row["post_id"]
+        file_path = f"../image/original_images/{id}.jpg"
 
         # Check if the file already exists
         if os.path.exists(file_path):
@@ -60,7 +60,7 @@ def download_images(df, batch_size, delay):
 
 def main():
     
-    df = pd.read_csv("data/posts.csv")
+    df = pd.read_csv("C:/Users/ADMIN/Desktop/ITDSIU21099_HoangVanManh/Fashion-Marketing-Automation-Solutions/data/processed/posts.csv")
     download_images(df=df, batch_size=10, delay=10)
     
 if __name__ == "__main__":
