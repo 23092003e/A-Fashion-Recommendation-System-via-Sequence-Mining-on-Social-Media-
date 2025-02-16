@@ -6,133 +6,107 @@ from segment_anything import sam_model_registry, SamPredictor
 from ultralytics import YOLO
 import supervision as sv
 
-
 def convert_bbox_x1y1x2y2_to_xywh(x1, y1, x2, y2):
-    """
-    Function to convert bounding box coordinates from top-left and bottom-right
-    points to top-left point with width and height.
-    
-    Args:
-        x1, y1, x2, y2 (int): Bounding box coordinates.
-        
-    Returns:
-        x, y, w, h (int): Converted bounding box coordinates.
-    """
     w = x2 - x1
     h = y2 - y1
     x = x1
     y = y1
-    return x, y, w, h
-
+    return x, y, w, h  
 
 def get_device():
-    """
-    Function to get the current device (CPU or CUDA).
-    
-    Returns:
-        device (torch.device): Current device.
-    """
-    return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def get_image_paths(image_dir):
-    """
-    Function to get all image paths in a directory.
-    
-    Args:
-        image_dir (str): Path to the directory containing the images.
-        
-    Returns:
-        image_paths (list): List of paths to the images.
-    """
     image_paths = [os.path.join(image_dir, f) for f in os.listdir(image_dir) if f.endswith(".jpg")]
     return image_paths
 
-
 def segment_image(yolo, mask_predictor, image_path):
-    """
-    Function to perform segmentation on an image.
-    
-    Args:
-        yolo (YOLO): YOLO object for prediction.
-        mask_predictor (SamPredictor): SAM model object for prediction.
-        image_path (str): Path to the image to be segmented.
-        
-    Returns:
-        None
-    """
     yolo_output = yolo.predict(image_path, conf=0.5)
-
+    
+    # Bounding box
     r = []
     for result in yolo_output:
-        for bbox in result.boxes.data,:
+        for bbox in result.boxes.data:
             box = bbox.int().cpu().numpy()
-            for b in box:
-                x, y, w, h = convert_bbox_x1y1x2y2_to_xywh(b[0], b[1], b[2], b[3])
-                r.append([b[0], b[1], b[2], b[3], b[5]])
-
-    # Create the image variable and box_annotator
+            r.append(box)  # Store the complete box data
+                
+    # Create the image variable
     image = cv2.imread(image_path)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    mask_combined = np.zeros((image.shape[0], image.shape[1]), dtype=np.uint8)
-    output = np.zeros_like(image)
-
-    for i, box in enumerate(r):
-        box = box[:-1]
-        box = np.array(box)
-
-        mask_predictor.set_image(image)
+    if image is None:
+        print(f"Error: Could not read image {image_path}")
+        return
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     
-        masks, scores, logits = mask_predictor.predict(box=box, multimask_output=True)
-
-        detections = sv.Detections(xyxy=sv.mask_to_xyxy(masks=masks), mask=masks)
-        detections = detections[detections.area == np.max(detections.area)]
-
-        # Combine the masks with a logical OR operation within the loop
-        for m in masks:
-            mask_combined = np.logical_or(mask_combined, m)
+    # Set the image for the SAM predictor
+    mask_predictor.set_image(image_rgb)
+    
+    # Initialize an empty combined mask
+    mask_combined = np.zeros((image_rgb.shape[0], image_rgb.shape[1]), dtype=np.uint8)
+    output = np.zeros_like(image_rgb)
+    
+    for box in r:
+        # Extract the bounding box coordinates
+        x1, y1, x2, y2 = box[0:4]
+        input_box = np.array([x1, y1, x2, y2])
         
+        masks, scores, logits = mask_predictor.predict(
+            box=input_box,
+            multimask_output=True
+        )
+        
+        # Select the mask with the highest score
+        best_mask_idx = np.argmax(scores)
+        mask = masks[best_mask_idx]
+        
+        # Combine the masks
+        mask_combined = np.logical_or(mask_combined, mask)
+    
     # Use the combined mask to select the pixels of the original image
-    output[mask_combined] = image[mask_combined]
-
-    # Save the image with the original colors
-    save_path = f"images/segmented_images/outfit_{os.path.basename(image_path).replace('.jpg', '.png')}"
-    cv2.imwrite(save_path, cv2.cvtColor(output, cv2.COLOR_RGB2BGR))  # Convert back to BGR for saving
-
+    output[mask_combined] = image_rgb[mask_combined]
+    
+    # Save the image
+    save_path = os.path.join(os.path.dirname(image_path), f"outfit_{os.path.basename(image_path).replace('.jpg', '.png')}")
+    cv2.imwrite(save_path, cv2.cvtColor(output, cv2.COLOR_RGB2BGR))
+    print(f"Segmented image saved at: {save_path}")
 
 def main():
-    """
-    Main function to perform segmentation on all images in a directory.
-    """
     MODEL_TYPE = "vit_h"
-    CHECKPOINT_PATH = os.path.join(os.getcwd(), "models", "sam_weights.pth")
-    YOLO_WEIGHTS = "models/yolo_weights.pt"
-    IMAGE_DIR = "images/original_images"
+    CHECKPOINT_PATH = "C:/Users/ADMIN/Desktop/ITDSIU21099_HoangVanManh/Fashion-Marketing-Automation-Solutions/sam2.1_b.pt"
+    YOLO_WEIGHTS = "C:/Users/ADMIN/Desktop/ITDSIU21099_HoangVanManh/Fashion-Marketing-Automation-Solutions/yolo11n.pt"
+    IMAGE_DIR = "C:/Users/ADMIN/Desktop/ITDSIU21099_HoangVanManh/Fashion-Marketing-Automation-Solutions/images/segmented_images"
     
-    # Make sure the segmented images directory exists
-    if not os.path.exists("images/segmented_images"):
-        os.makedirs("images/segmented_images")
-
-    # Create the YOLO and SAM models
+    # Initialize YOLO
     yolo = YOLO(YOLO_WEIGHTS)
-    sam = sam_model_registry[MODEL_TYPE](checkpoint=CHECKPOINT_PATH).to(device=get_device())
-    mask_predictor = SamPredictor(sam)
     
-    # Segment all images in the directory
+    # Initialize SAM
+    device = get_device()
+    sam = sam_model_registry[MODEL_TYPE](checkpoint=None).to(device=device)
+    checkpoint = torch.load(CHECKPOINT_PATH, map_location=device)
+    if isinstance(checkpoint, dict):
+        state_dict = checkpoint.get("model", checkpoint)
+        # Nếu state_dict chứa key "model", bóc tách thêm 1 lớp nữa
+        if isinstance(state_dict, dict) and "model" in state_dict:
+            state_dict = state_dict["model"]
+        sam.load_state_dict(state_dict,strict=False)
+    else:    
+        sam = checkpoint.to(device)
+    
+    mask_predictor = SamPredictor(sam)
+
+
+    # Process images
     image_paths = get_image_paths(IMAGE_DIR)
     for image_path in image_paths:
-        # Define the path of the segmented image
-        segmented_image_path = f"images/segmented_images/outfit_{os.path.basename(image_path).replace('.jpg', '.png')}"
+        segment_image_path = os.path.join(
+            IMAGE_DIR,
+            f"outfit_{os.path.basename(image_path).replace('.jpg', '.png')}"
+        )
         
-        # Check if the segmented image already exists
-        if os.path.exists(segmented_image_path):
-            print(f"Segmented image {segmented_image_path} already exists, skipping.")
+        if os.path.exists(segment_image_path):
+            print(f"Segmented image already exists: {segment_image_path}. Skipping...")
             continue
-
-        # If it doesn't exist, perform the segmentation
+        
         segment_image(yolo, mask_predictor, image_path)
-
 
 if __name__ == "__main__":
     main()
