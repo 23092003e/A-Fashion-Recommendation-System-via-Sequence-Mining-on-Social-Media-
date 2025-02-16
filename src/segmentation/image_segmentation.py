@@ -49,19 +49,19 @@ def segment_image(yolo_model, sam_model, image_path):
     output[mask_combined] = image[mask_combined]
     
     # Save the segmented image
-    save_path = f"images/segmented_images/outfit_{os.path.basename(image_path).replace('.jpg', '.png')}"
+    save_path = f"C:/Users/ADMIN/Desktop/ITDSIU21099_HoangVanManh/Fashion-Marketing-Automation-Solutions/images/segmented_images/outfit_{os.path.basename(image_path).replace('.jpg', '.png')}"
     cv2.imwrite(save_path, cv2.cvtColor(output, cv2.COLOR_RGB2BGR))
 
 
 def main():
     """Main function to perform segmentation on all images in a directory."""
     # Define paths
-    YOLO_WEIGHTS = "models/yolo_weights.pt"
-    SAM_WEIGHTS = "sam2_h.pt"  # or "sam2_l.pt" for lighter version
-    IMAGE_DIR = "images/original_images"
+    YOLO_WEIGHTS = "C:/Users/ADMIN/Desktop/ITDSIU21099_HoangVanManh/Fashion-Marketing-Automation-Solutions/models/yolo_weights.pt"
+    SAM_WEIGHTS = "C:/Users/ADMIN/Desktop/ITDSIU21099_HoangVanManh/Fashion-Marketing-Automation-Solutions/models/sam2.1_b.pt"  # or "sam2_l.pt" for lighter version
+    IMAGE_DIR = "C:/Users/ADMIN/Desktop/ITDSIU21099_HoangVanManh/Fashion-Marketing-Automation-Solutions/images/segmented_images"
     
     # Create output directory if it doesn't exist
-    os.makedirs("images/segmented_images", exist_ok=True)
+    os.makedirs("C:/Users/ADMIN/Desktop/ITDSIU21099_HoangVanManh/Fashion-Marketing-Automation-Solutions/images/segmented_images", exist_ok=True)
     
     # Initialize models
     yolo_model = YOLO(YOLO_WEIGHTS)
@@ -71,7 +71,7 @@ def main():
     image_paths = get_image_paths(IMAGE_DIR)
     for image_path in image_paths:
         # Define output path
-        segmented_image_path = f"images/segmented_images/outfit_{os.path.basename(image_path).replace('.jpg', '.png')}"
+        segmented_image_path = f"C:/Users/ADMIN/Desktop/ITDSIU21099_HoangVanManh/Fashion-Marketing-Automation-Solutions/images/segmented_images/outfit_{os.path.basename(image_path).replace('.jpg', '.png')}"
         
         # Skip if already processed
         if os.path.exists(segmented_image_path):
