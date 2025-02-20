@@ -86,9 +86,6 @@ def process_data(df: pd.DataFrame) -> pd.DataFrame:
     # Process likesCount and commentsCount
     df["likesCount"] = df["likesCount"].fillna(0).astype(int)
     df["commentsCount"] = df["commentsCount"].fillna(0).astype(int)
-        
-    # Ordering by timestamp
-    df.sort_values(by=["timestamp"], inplace=True)
     
     df = df.drop("comments", axis=1)
     
