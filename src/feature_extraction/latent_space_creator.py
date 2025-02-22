@@ -9,7 +9,6 @@ import re
 from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Dropout  # type: ignore
 from sklearn.model_selection import train_test_split
 
-# 1. Load images
 def get_images_and_filenames(path):
     image_list = []
     filename_list = []
@@ -24,7 +23,6 @@ def get_images_and_filenames(path):
             image_list.append(img)
             filename_list.append(filename)
     
-    # Extract numeric parts for sorting
     filename_list = [int(re.findall(r'\d+', s)[0]) for s in filename_list]
     X_train = np.array(image_list, dtype=np.float32)
     return X_train, filename_list
