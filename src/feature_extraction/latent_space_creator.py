@@ -1,4 +1,4 @@
-from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.models import Model, load_model # type: ignore
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import pandas as pd
@@ -6,7 +6,7 @@ import numpy as np
 import cv2
 import os
 import re
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Dropout
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Dropout  # type: ignore
 from sklearn.model_selection import train_test_split
 
 # 1. Load images
