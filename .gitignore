@@ -26,6 +26,7 @@ share/python-wheels/
 *.egg
 MANIFEST
 models/
+myenv/
 
 yolo11n.pt
 sam2.1_b.pt
