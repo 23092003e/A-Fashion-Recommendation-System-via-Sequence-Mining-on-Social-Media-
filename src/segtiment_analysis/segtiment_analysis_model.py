@@ -18,68 +18,27 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 
 def load_data(filepath):
-    """Load data from a file into a pandas DataFrame.
-
-    Args:
-        filepath (str): The file's path.
-        
-    Returns:
-        pd.DataFrame: The loaded data.
-    """
     df = pd.read_excel(filepath)
     return df
 
 
 def clean_data(df):
-    """Clean and prepare the data for the machine learning model.
-
-    Args:
-        df (pd.DataFrame): The data to clean.
-        
-    Returns:
-        pd.DataFrame: The cleaned data.
-    """
     df = df.drop_duplicates(subset='comments', keep='first')
     df = df.drop(columns=608, axis=1)
     return df
 
 
 def tokenize(text):
-    """Tokenize the input text, converting to lowercase and removing stopwords.
-
-    Args:
-        text (str): The input text.
-        
-    Returns:
-        list: A list of tokenized words.
-    """
     if text is None:
         return None
-    
-    # Convert emoji to text
     text = emoji.demojize(text, delimiters=(" ", " "))
-    
-    # Replace unrecognized emoji (left as ::) with space
     text = re.sub('::', ' ', text)
-    
-    # Tokenize
     tokens = word_tokenize(text)
-    
-    # Remove English stopwords
     tokens = [token for token in tokens if token not in stopwords.words('english')]
-    
     return tokens
 
 
 def split_data(df):
-    """Split the data into training and testing sets.
-
-    Args:
-        df (pd.DataFrame): The data to split.
-        
-    Returns:
-        list: The split data [X_train, X_test, y_train, y_test].
-    """
     df2 = df[df['category'].notnull()]
     X = df2.comments
     y = df2.category
@@ -87,11 +46,6 @@ def split_data(df):
 
 
 def build_model():
-    """Creates a machine learning pipeline for multiclass classification 
-
-    Returns:
-        obj: The machine learning model that will be used to classify the messages.
-    """
     pipeline = Pipeline([
         ('vect', CountVectorizer(tokenizer=tokenize)),
         ('tfidf', TfidfTransformer()),
@@ -107,13 +61,6 @@ def build_model():
 
 
 def evaluate_model(model, X_test, y_test):
-    """Trains and evaluates a machine learning model with test data.
-
-    Args:
-        model (obj): The machine learning model that will be trained.
-        X_test (array): The testing data.
-        y_test (array): The correct testing results.
-    """
     y_pred = model.predict(X_test)
 
     print('Classification Report:')
@@ -124,19 +71,13 @@ def evaluate_model(model, X_test, y_test):
 
 
 def save_model(model, filename):
-    """Saves the model to a file.
-
-    Args:
-        model (obj): The machine learning model to save.
-        filename (str): The filename to save the model as.
-    """
     joblib.dump(model, filename)
 
 
 def predict_unlabelled_data(model):
     path = r"C:\Users\ADMIN\Desktop\ITDSIU21099_HoangVanManh\Fashion-Marketing-Automation-Solutions\data\processed\posts_comments.csv"
     df_comments = pd.read_csv(path)
-    df_comments['comments'] = df_comments['comments'].fillna('unknown')
+    df_comments['comments'] = df_comments['comments'].fillna('No comment')
     df_comments['category'] = model.predict(df_comments['comments'])
     df_comments.to_csv(path, sep=';')
 
