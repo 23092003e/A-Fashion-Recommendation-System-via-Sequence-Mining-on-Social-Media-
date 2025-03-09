@@ -77,7 +77,7 @@ def save_model(model, filename):
 def predict_unlabelled_data(model):
     path = r"C:\Users\ADMIN\Desktop\ITDSIU21099_HoangVanManh\Fashion-Marketing-Automation-Solutions\data\processed\posts_comments.csv"
     df_comments = pd.read_csv(path)
-    df_comments['comments'] = df_comments['comments'].fillna('No comment')
+    df_comments['comments'] = df_comments['comments'].fillna('')
     df_comments['category'] = model.predict(df_comments['comments'])
     df_comments.to_csv(path, sep=';')
 

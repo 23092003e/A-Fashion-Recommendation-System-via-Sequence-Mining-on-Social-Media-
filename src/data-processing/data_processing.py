@@ -33,7 +33,7 @@ def replace_emojis_with_text(text: str) -> str:
 # Processes DataFrame and returns new dataframe.
 def process_data(df: pd.DataFrame) -> pd.DataFrame:
     # Selecting relevant columns
-    selected_columns = ["id", "timestamp", "ownerUsername", "type", "caption", "hashtags", "likesCount", "commentsCount", "latestComments", "images"]
+    selected_columns = ["id", "timestamp", "ownerUsername","caption", "hashtags", "likesCount", "commentsCount", "latestComments", "images"]
     df = df[selected_columns]
     
     # Rename columns
@@ -41,7 +41,6 @@ def process_data(df: pd.DataFrame) -> pd.DataFrame:
         "id": "post_id",
         "timestamp": "timestamp",
         "ownerUsername": "ownerUsername",
-        "type": "type",
         "caption": "caption",
         "hashtags": "hashtags",
         "likesCount": "likesCount",
@@ -51,7 +50,6 @@ def process_data(df: pd.DataFrame) -> pd.DataFrame:
     })
     
     # Filtering out rows where type is "Video", like count is -1.0 and image is not null
-    df = df[(df["type"] != "Video")] 
     df = df[df["likesCount"] != -1.0]
     df = df[df["image"].notna()]
 
@@ -66,7 +64,7 @@ def process_data(df: pd.DataFrame) -> pd.DataFrame:
     df["image"] = df["image"].apply(lambda x: x[0])
     
     # Process caption
-    df["caption"] = df["caption"].fillna("").str.replace("\n", " ")
+    df["caption"] = df["caption"].fillna(" ").str.replace("\n", " ")
     
     # Process hashtags
     df["hashtags"] = df["hashtags"].apply(lambda x: ", ".join(x) if isinstance(x, list) else "")
