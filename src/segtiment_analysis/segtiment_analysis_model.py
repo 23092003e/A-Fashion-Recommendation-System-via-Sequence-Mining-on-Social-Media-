@@ -27,13 +27,11 @@ nltk.download('punkt', quiet=True)
 nltk.download('wordnet', quiet=True)
 
 def load_data(filepath):
-    """Tải dữ liệu từ file Excel"""
     df = pd.read_excel(filepath)
     print(f"Đã tải dữ liệu từ {filepath}. Kích thước: {df.shape}")
     return df
 
 def explore_data(df):
-    """Khám phá dữ liệu để hiểu rõ hơn về phân phối và vấn đề tiềm ẩn"""
     # Kiểm tra phân phối nhãn
     print("\nPhân phối nhãn:")
     label_counts = df['category'].value_counts()

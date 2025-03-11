@@ -33,7 +33,8 @@ def replace_emojis_with_text(text: str) -> str:
 # Processes DataFrame and returns new dataframe.
 def process_data(df: pd.DataFrame) -> pd.DataFrame:
     # Selecting relevant columns
-    selected_columns = ["id", "timestamp", "ownerUsername","caption", "hashtags", "likesCount", "commentsCount", "latestComments", "images"]
+    selected_columns = ["id", "timestamp", "ownerUsername","caption", "hashtags", 
+                        "likesCount", "commentsCount", "latestComments", "images"]
     df = df[selected_columns]
     
     # Rename columns
