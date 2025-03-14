@@ -11,8 +11,11 @@
 1. Dua vao comment
 2. Dua vao caption + hashtag
 3. Dua vao mo ta hinh anh *** (kiem du lieu thong tin ho tro ngu nghia cho hinh anh)
-4. 
 
 Kiem tech su dung recommendation system
 => Chuoi image cho mot user theo outfit +  link knowledge (caption, comment, hashtag)
+
+#timestamp
+# user_name (user_id)
+=> for post_comments
 
