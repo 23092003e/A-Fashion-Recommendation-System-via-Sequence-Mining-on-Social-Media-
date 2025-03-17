@@ -33,7 +33,7 @@ def load_data(filepath):
 
 def explore_data(df):
     # Kiểm tra phân phối nhãn
-    print("\nPhân phối nhãn:")
+    print("\nLabel distribution:")
     label_counts = df['category'].value_counts()
     print(label_counts)
     
@@ -59,14 +59,7 @@ def clean_data(df):
     # Loại bỏ các bản ghi trùng lặp
     df_cleaned = df.drop_duplicates(subset='comments', keep='first')
     
-    # Xử lý các cột không cần thiết
-    if 608 in df_cleaned.columns:
-        df_cleaned = df_cleaned.drop(columns=608, axis=1)
-    
-    # Xử lý giá trị null
     df_cleaned['comments'] = df_cleaned['comments'].fillna('')
-    
-    # Chuyển đổi loại dữ liệu nếu cần
     df_cleaned['comments'] = df_cleaned['comments'].astype(str)
     
     print(f"Dữ liệu sau khi làm sạch: {df_cleaned.shape}")
@@ -77,13 +70,10 @@ def preprocess_text(text):
     if not isinstance(text, str) or text is None or text == '':
         return ''
     
-    # Chuyển emoji thành text
     text = emoji.demojize(text, delimiters=(" ", " "))
     
-    # Chuyển về chữ thường
     text = text.lower()
     
-    # Thay thế các ký tự đặc biệt
     text = re.sub('::', ' ', text)
     text = re.sub(r'http\S+|www\S+|https\S+', ' URL ', text)
     text = re.sub(r'@[A-Za-z0-9]+', ' MENTION ', text)
@@ -105,13 +95,9 @@ def tokenize_and_lemmatize(text):
     if not isinstance(text, str) or text is None or text == '':
         return []
     
-    # Tiền xử lý text
     text = preprocess_text(text)
-    
-    # Tách từ
     tokens = word_tokenize(text)
     
-    # Loại bỏ stopwords
     stop_words = set(stopwords.words('english'))
     tokens = [token for token in tokens if token not in stop_words and len(token) > 1]
     
@@ -122,17 +108,14 @@ def tokenize_and_lemmatize(text):
     return tokens
 
 def split_data_with_stratification(df):
-    """Chia dữ liệu với stratification để đảm bảo phân phối nhãn đồng đều"""
     df2 = df[df['category'].notnull()]
     X = df2.comments
     y = df2.category
     
-    # Giá trị test_size có thể điều chỉnh để tối ưu
     return train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
 def handle_imbalanced_data(X_train, y_train):
     """Xử lý dữ liệu mất cân bằng bằng SMOTE"""
-    # Tạo pipeline để chuyển đổi văn bản thành vector
     vectorizer = TfidfVectorizer(tokenizer=tokenize_and_lemmatize, max_features=5000, min_df=2)
     X_train_vec = vectorizer.fit_transform(X_train)
     
@@ -152,9 +135,9 @@ def build_model():
             tokenizer=tokenize_and_lemmatize,
             max_features=5000,
             min_df=2,
-            ngram_range=(1, 2),  # Thêm bigram
+            ngram_range=(1, 2),  
             use_idf=True,
-            sublinear_tf=True  # Áp dụng sublinear scaling cho term-frequency
+            sublinear_tf=True 
         )),
         ('clf', RandomForestClassifier(n_jobs=-1, class_weight='balanced'))
     ])
