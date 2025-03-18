@@ -27,7 +27,7 @@ def replace_emojis_with_text(text: str) -> str:
     return text
 
 # Hàm xử lý DataFrame và tách riêng DataFrame cho bình luận
-def process_data(df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+def process_data(df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame): # type: ignore
     # Chọn các cột cần thiết
     selected_columns = ["id", "timestamp", "ownerUsername", "caption", "hashtags", 
                         "likesCount", "commentsCount", "latestComments", "images"]
