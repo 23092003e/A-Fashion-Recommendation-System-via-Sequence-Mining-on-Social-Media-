@@ -3,7 +3,7 @@ import numpy as np
 from pathlib import Path
 import emot
 
-# Hàm đọc dữ liệu từ file JSON
+# Read data from JSON file
 def read_data(path: str) -> pd.DataFrame:
     try:
         return pd.read_json(path)
@@ -14,7 +14,7 @@ def read_data(path: str) -> pd.DataFrame:
     except Exception as e:
         raise Exception(f"Unexpected error reading file: {str(e)}")
 
-# Hàm thay thế emoji bằng dạng text
+# Function to replace emojis with text
 def replace_emojis_with_text(text: str) -> str:
     emot_obj = emot.emot()
     try:
@@ -26,14 +26,14 @@ def replace_emojis_with_text(text: str) -> str:
         print(f"An error occurred while processing the text: {text}. The error is as follows: {e}")
     return text
 
-# Hàm xử lý DataFrame và tách riêng DataFrame cho bình luận
+# Function to process DataFrame and separate DataFrame for comments
 def process_data(df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame): # type: ignore
-    # Chọn các cột cần thiết
+    # Select necessary columns
     selected_columns = ["id", "timestamp", "ownerUsername", "caption", "hashtags", 
                         "likesCount", "commentsCount", "latestComments", "images"]
     df = df[selected_columns]
     
-    # Đổi tên các cột cho dễ hiểu
+    # Rename columns for better understanding
     df = df.rename(columns ={
         "id": "post_id",
         "timestamp": "timestamp",
@@ -46,26 +46,26 @@ def process_data(df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame): # type: igno
         "images": "image"
     })
     
-    # Lọc bỏ các hàng có likesCount = -1.0 và không có ảnh
+    # Filter out rows with likesCount = -1.0 and no images
     df = df[df["likesCount"] != -1.0]
     df = df[df["image"].notna()]
-    # Loại bỏ các hàng có image là list rỗng
+    # Remove rows with empty image list
     df = df[df["image"].apply(len) > 0]
     
-    # Reset index và tạo cột post_id đánh số từ 1
+    # Reset index and create post_id column with numbering from 1
     df.reset_index(drop=True, inplace=True)
     df["post_id"] = df.index + 1
     
-    # Nếu có nhiều ảnh thì chọn ảnh đầu tiên
+    # If there are multiple images, select the first image
     df["image"] = df["image"].apply(lambda x: x[0])
     
-    # Xử lý caption: điền giá trị trống nếu thiếu và thay thế ký tự xuống dòng
+    # Process caption: fill empty values and replace newline characters with spaces
     df["caption"] = df["caption"].fillna(" ").str.replace("\n", " ")
     
-    # Xử lý hashtags: nếu là list thì nối thành chuỗi, nếu không thì gán chuỗi rỗng
+    # Process hashtags: if it's a list, join it into a string, otherwise assign an empty string
     df["hashtags"] = df["hashtags"].apply(lambda x: ", ".join(x) if isinstance(x, list) else "")
     
-    # Tách dữ liệu bình luận
+    # Split comment data
     comments_data = []
     for _, row in df.iterrows():
         pid = row["post_id"]
@@ -84,7 +84,7 @@ def process_data(df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame): # type: igno
                     "likes": comment_likes
                 })
         else:
-            # Nếu không có bình luận thì bạn có thể bỏ qua hoặc thêm một dòng với giá trị np.nan
+            # If there are no comments, you can skip or add a row with the value np.nan
             comments_data.append({
                 "post_id": pid,
                 "ownerUsername": np.nan,
@@ -94,25 +94,25 @@ def process_data(df: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame): # type: igno
             })
     df_comments = pd.DataFrame(comments_data)
     
-    # Thay thế emoji trong bình luận
+    # Replace emojis in comments
     if not df_comments.empty:
         df_comments["comments"] = df_comments["comments"].apply(replace_emojis_with_text)
-        # Xử lý timestamp cho bình luận
+        # Process timestamp for comments
         df_comments["timestamp"] = pd.to_datetime(df_comments["timestamp"], errors='coerce')
     
-    # Xử lý timestamp cho bài đăng
+    # Process timestamp for posts
     df["timestamp"] = pd.to_datetime(df["timestamp"], errors='coerce')
     
-    # Xử lý likesCount và commentsCount: điền giá trị 0 nếu bị thiếu
+    # Process likesCount and commentsCount: fill with 0 if missing
     df["likesCount"] = df["likesCount"].fillna(0).astype(int)
     df["commentsCount"] = df["commentsCount"].fillna(0).astype(int)
     
-    # Sau khi đã tách bình luận, loại bỏ cột comments khỏi df chính
+    # After splitting comments, remove the comments column from the main df
     df = df.drop("comments", axis=1)
     
     return df, df_comments
 
-# Hàm lưu dữ liệu ra file CSV
+# Function to save data to CSV file
 def save_data(df: pd.DataFrame, df_comments: pd.DataFrame) -> None:
     output_dir = Path("C:/Users/ADMIN/Desktop/ITDSIU21099_HoangVanManh/Fashion-Marketing-Automation-Solutions/data/processed")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -127,18 +127,18 @@ def save_data(df: pd.DataFrame, df_comments: pd.DataFrame) -> None:
 
 def main():
     try:
-        # Định nghĩa đường dẫn tới thư mục dữ liệu gốc
+        # Define the path to the raw data directory
         input_dir = Path("C:/Users/ADMIN/Desktop/ITDSIU21099_HoangVanManh/Fashion-Marketing-Automation-Solutions/data/raw")
         path1 = input_dir / "posts_1.json"
         path2 = input_dir / "posts_2.json"
         
         print(f"Reading data from {input_dir}")
         
-        # Đọc dữ liệu từ 2 file JSON
+        # Read data from 2 JSON files
         df_1 = read_data(path1)
         df_2 = read_data(path2)
         
-        # Gộp dữ liệu từ 2 file lại
+        # Concatenate data from 2 files
         df = pd.concat([df_1, df_2])
         df, df_comments = process_data(df)
         save_data(df, df_comments)
