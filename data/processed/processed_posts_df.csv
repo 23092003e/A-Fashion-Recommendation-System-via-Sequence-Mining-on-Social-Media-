@@ -1,4 +1,4 @@
-post_id,postUser,timestamp,likesCount,commentsCount,combined_keywords
+post_id,postUser,timestamp,likesCount,commentsCount,keywords_posts
 1,maryleest,2023-06-02 16:34:43+00:00,32070,142,"['cannes', 'kilian', 'dress', '2023', 'kilianparis', 'kiliancannes', 'wearing']"
 2,tinaabeysekara,2023-01-01 07:49:16+00:00,6565,86,"['2022', '2023', 'clock', 'struck', 'midnight', 'year', 'ever', 'thank']"
 3,maryleest,2023-05-29 18:57:51+00:00,28936,123,"['dress', 'jewelry', 'famous', 'stairs', 'photo', 'gustave_durin', 'dress marmarhalim']"
