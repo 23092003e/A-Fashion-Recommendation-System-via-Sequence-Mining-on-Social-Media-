@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c:*)",
+      "Bash(python add_remaining_cells.py:*)",
+      "Bash(python add_model_evaluation_cells.py:*)",
+      "Bash(del add_remaining_cells.py add_model_evaluation_cells.py)",
+      "Bash(cp:*)",
+      "Bash(python:*)",
+      "Bash(dir:*)",
+      "Bash(pip install:*)",
+      "Bash(Fashion_Recommender_THESIS.ipynb)",
+      "Bash(nul)",
+      "Bash(NUL)",
+      "Bash(copy Fashion_Recommender_Improved.ipynb Fashion_Recommender_THESIS.ipynb)",
+      "Bash(del Fashion_Recommender_Complete_Thesis.ipynb Fashion_Recommender_FINAL_THESIS.ipynb Fashion_Recommender_Final.ipynb Fashion_Recommender_Improved.ipynb 2)",
+      "Bash(del full_ranking_pipeline.py improve_model_ranking.py export_data_for_ranking.py 2)",
+      "Bash(del RUN_EVALUATION_ORDER.txt THESIS_README.md run_comprehensive_evaluation.py 2)",
+      "Bash(find:*)",
+      "Bash(del add_hybrid_cells.py)",
+      "Bash(rm:*)",
+      "Bash(del temp_cell_82.txt)",
+      "Bash(findstr:*)",
+      "Bash(cmd /c dir /b)",
+      "Bash(del advanced_hybrid_models.py test_ensemble.py add_ensemble_cells.py HYBRID_ENSEMBLE_IMPLEMENTATION.md IMPLEMENTATION_SUMMARY.md QUICK_START_GUIDE.md FILE_REFERENCE.md EVALUATION_REPORT.md THESIS_SUMMARY.md hybrid_model_results.json metric_comparison.png notebook_fix_summary.txt nul 2)",
+      "Bash(mkdir:*)",
+      "Bash(if not exist algorithms mkdir algorithms)",
+      "Bash(if not exist results mkdir results)",
+      "Bash(if not exist models mkdir models)",
+      "Bash(tree:*)",
+      "Bash(if exist algorithms dir /s /b algorithms)",
+      "Bash(cmd /c \"if exist algorithms dir /s /b algorithms\")",
+      "Bash(cmd /c dir /b input)",
+      "Bash(cmd /c \"if not exist models mkdir models\")",
+      "Bash(venv/Scripts/python.exe -m jupyter nbconvert:*)",
+      "Bash(git restore:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
