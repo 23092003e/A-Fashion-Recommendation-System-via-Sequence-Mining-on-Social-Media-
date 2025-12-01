@@ -1,0 +1,19 @@
+
+\begin{table}[htbp]
+\centering
+\caption{Ablation Study Results}
+\label{tab:ablation}
+\begin{tabular}{l|cc|c}
+\toprule
+\textbf{Configuration} & \textbf{HR@10} & \textbf{Std} & \textbf{$\Delta$ HR@10} \\
+\midrule
+Full Model (Proposed) & 0.3177 & 0.0089 & - \\
+\midrule
+Text-Only & 0.3203 & 0.0061 & +0.0026 \\
+Image-Only & 0.1983 & 0.0050 & -0.1194 \\
+No-Gate (Concat) & 0.3143 & 0.0089 & -0.0034 \\
+No-MHA & 0.2571 & 0.0161 & -0.0606 \\
+No-BiLSTM & 0.2684 & 0.0082 & -0.0493 \\
+\bottomrule
+\end{tabular}
+\end{table}

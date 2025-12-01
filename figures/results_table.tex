@@ -1,0 +1,24 @@
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison of Recommendation Models on Fashion Dataset}
+\label{tab:model_comparison}
+\begin{tabular}{l|cc|cc}
+\toprule
+\textbf{Model} & \textbf{HR@10} & \textbf{HR@10 Std} & \textbf{MRR} & \textbf{MRR Std} \\
+\midrule
+\multicolumn{5}{l}{\textit{Baselines}} \\
+Popularity & 0.0519 & - & - & - \\
+GRU4Rec & 0.0381 & 0.0117 & 0.0133 & 0.0043 \\
+SASRec & 0.2121 & 0.0072 & 0.1520 & 0.0020 \\
+BERT4Rec & 0.2381 & 0.0061 & 0.1529 & 0.0028 \\
+\midrule
+\multicolumn{5}{l}{\textit{Proposed Models}} \\
+Multimodal-GF & 0.3177 & 0.0089 & 0.1875 & 0.0055 \\
+\textbf{Multimodal-Hybrid} & \textbf{0.6416} & 0.0114 & \textbf{0.3561} & 0.0091 \\
+\midrule
+\multicolumn{5}{l}{\textit{Improvement over best baseline (BERT4Rec)}} \\
+Multimodal-Hybrid & \multicolumn{2}{c|}{+169.5\%} & \multicolumn{2}{c}{+132.9\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
