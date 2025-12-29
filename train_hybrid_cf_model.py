@@ -1,5 +1,5 @@
 """
-Hybrid Model: Neural + Item-Item Similarity + User Patterns
+Hybrid Model: Neural + Item-Item Similarity + User Patterns + Sentiment Weighting
 Target: HR@10 >= 0.4, MRR >= 0.3
 
 Key insight: With small data, we need to leverage ALL signals:
@@ -7,7 +7,8 @@ Key insight: With small data, we need to leverage ALL signals:
 2. Item-item similarity (content-based)
 3. Co-occurrence statistics
 4. Popularity prior
-5. Smart combination
+5. Sentiment-based sample weighting
+6. Smart combination
 """
 
 import pandas as pd
@@ -45,6 +46,33 @@ if isinstance(df_seq['posts_sequence'].iloc[0], str):
     df_seq['posts_sequence_list'] = df_seq['posts_sequence'].apply(ast.literal_eval)
 else:
     df_seq['posts_sequence_list'] = df_seq['posts_sequence']
+
+# Parse interaction_sequence to extract polarity scores
+def parse_interaction_sequence(seq_str):
+    """Parse interaction_sequence string to extract post_id -> polarity mapping"""
+    try:
+        # The string contains Timestamp objects, use eval with pandas context
+        seq = eval(seq_str, {"Timestamp": pd.Timestamp})
+        return {item['post_id']: item.get('polarity', 0.5) for item in seq}
+    except:
+        return {}
+
+df_seq['polarity_map'] = df_seq['interaction_sequence'].apply(parse_interaction_sequence)
+print(f'Parsed polarity for {len(df_seq)} users')
+
+# Sentiment-based weight function
+def polarity_to_weight(polarity):
+    """Convert polarity score to training weight.
+    Positive sentiment (polarity >= 0.5): weight = 1.0 (emphasize learning)
+    Neutral sentiment (0.0 <= polarity < 0.5): weight = 0.7
+    Negative sentiment (polarity < 0.0): weight = 0.3 (down-weight)
+    """
+    if polarity >= 0.5:
+        return 1.0
+    elif polarity >= 0.0:
+        return 0.7
+    else:
+        return 0.3
 
 all_post_ids = set()
 for seq in df_seq['posts_sequence_list']:
@@ -103,16 +131,30 @@ test_samples = []
 
 for idx, row in df_seq.iterrows():
     raw_seq = row['posts_sequence_list']
+    polarity_map = row['polarity_map']
     seq = [post2idx.get(pid, 0) for pid in raw_seq]
     if len(seq) < 2:
         continue
-    test_samples.append((seq[:-1], seq[-1]))
+
+    # Test sample: use average polarity of sequence as weight
+    avg_polarity = np.mean([polarity_map.get(pid, 0.5) for pid in raw_seq])
+    test_weight = polarity_to_weight(avg_polarity)
+    test_samples.append((seq[:-1], seq[-1], test_weight))
+
+    # Train samples: use polarity of target item
     train_seq = seq[:-1]
     for i in range(1, len(train_seq)):
         start = max(0, i - 20)
-        train_samples.append((train_seq[start:i], train_seq[i]))
+        target_pid = raw_seq[i]  # Original post_id
+        polarity = polarity_map.get(target_pid, 0.5)
+        weight = polarity_to_weight(polarity)
+        train_samples.append((train_seq[start:i], train_seq[i], weight))
 
 print(f'Train: {len(train_samples)}, Test: {len(test_samples)}')
+
+# Show weight distribution
+train_weights = [s[2] for s in train_samples]
+print(f'Weight distribution: 1.0={train_weights.count(1.0)}, 0.7={train_weights.count(0.7)}, 0.3={train_weights.count(0.3)}')
 
 class SimpleDataset(Dataset):
     def __init__(self, samples):
@@ -120,13 +162,15 @@ class SimpleDataset(Dataset):
     def __len__(self):
         return len(self.samples)
     def __getitem__(self, idx):
-        seq, target = self.samples[idx]
-        return torch.tensor(seq, dtype=torch.long), torch.tensor(target, dtype=torch.long)
+        seq, target, weight = self.samples[idx]
+        return (torch.tensor(seq, dtype=torch.long),
+                torch.tensor(target, dtype=torch.long),
+                torch.tensor(weight, dtype=torch.float))
 
 def collate_fn(batch):
-    seqs, targets = zip(*batch)
+    seqs, targets, weights = zip(*batch)
     seqs_padded = torch.nn.utils.rnn.pad_sequence(seqs, batch_first=True, padding_value=0)
-    return seqs_padded, torch.stack(targets)
+    return seqs_padded, torch.stack(targets), torch.stack(weights)
 
 train_loader = DataLoader(SimpleDataset(train_samples), batch_size=32, shuffle=True, collate_fn=collate_fn)
 test_loader = DataLoader(SimpleDataset(test_samples), batch_size=32, collate_fn=collate_fn)
@@ -273,25 +317,29 @@ class HybridModel(nn.Module):
 def train_model(model, train_loader, epochs=100, lr=0.00015):
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
-    criterion = nn.CrossEntropyLoss()
+    # Use reduction='none' to apply per-sample weights
+    criterion = nn.CrossEntropyLoss(reduction='none')
 
     model.train()
-    print('Training Hybrid Model...')
+    print('Training Hybrid Model with Sentiment Weighting...')
 
     for epoch in range(epochs):
         total_loss = 0
-        for seqs, targets in train_loader:
-            seqs, targets = seqs.to(device), targets.to(device)
+        for seqs, targets, weights in train_loader:
+            seqs, targets, weights = seqs.to(device), targets.to(device), weights.to(device)
 
             optimizer.zero_grad()
             # Train only neural part
             logits = model(seqs)
-            loss = criterion(logits, targets)
 
-            loss.backward()
+            # Compute per-sample loss and apply sentiment weights
+            per_sample_loss = criterion(logits, targets)  # [B]
+            weighted_loss = (per_sample_loss * weights).mean()  # Weighted average
+
+            weighted_loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
-            total_loss += loss.item()
+            total_loss += weighted_loss.item()
 
         scheduler.step()
 
@@ -307,7 +355,7 @@ def evaluate(model, test_loader, use_hybrid=True, k_list=[5, 10, 20]):
     total = 0
 
     with torch.no_grad():
-        for seqs, targets in test_loader:
+        for seqs, targets, _ in test_loader:  # Ignore weights during evaluation
             seqs, targets = seqs.to(device), targets.to(device)
 
             if use_hybrid:

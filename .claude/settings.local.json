@@ -53,7 +53,18 @@
       "Bash(\"venv/Scripts/python.exe\" train_optimized_model.py)",
       "Bash(\"venv/Scripts/python.exe\" train_hybrid_cf_model.py)",
       "Bash(\"venv/Scripts/python.exe\" thesis_complete_evaluation.py)",
-      "Bash(\"venv/Scripts/python.exe\" generate_thesis_figures.py)"
+      "Bash(\"venv/Scripts/python.exe\" generate_thesis_figures.py)",
+      "Bash(\"venv/Scripts/pip.exe\" install python-docx)",
+      "Bash(\"venv/Scripts/python.exe\" generate_chapter2.py)",
+      "Bash(\"venv/Scripts/python.exe\" -c \"import pandas as pd; df = pd.read_csv(''input/user_behavior.csv''); print(df[''interaction_sequence''].iloc[0][:500])\")",
+      "Bash(\"venv/Scripts/python.exe\" add_chart_cell.py)",
+      "Bash(del add_chart_cell.py)",
+      "Bash(wc:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(du -sh:*)",
+      "Bash(\"venv/Scripts/python.exe\" -c \"\nimport sys\nsys.path.insert\\(0, ''demo''\\)\nfrom utils.data_loader import DataLoader\nfrom utils.model_loader import ModelLoader\n\n# Test data loader\nprint\\(''Testing DataLoader...''\\)\ndl = DataLoader\\(''.''\\)\nsuccess = dl.load_all_data\\(\\)\nprint\\(f''Data loaded: {success}''\\)\nprint\\(f''post2idx: {dl.post2idx is not None}''\\)\nprint\\(f''embeddings: {dl.embeddings is not None}''\\)\n\nif success:\n    print\\(f''Vocab size: {len\\(dl.post2idx\\)}''\\)\n    print\\(f''Embeddings shape: {dl.embeddings.shape}''\\)\n    \n    # Test model loader\n    print\\(''\\\\nTesting ModelLoader...''\\)\n    ml = ModelLoader\\(''.''\\)\n    ml.load_hybrid_model\\(dl.embeddings, dl.post2idx\\)\n    print\\(''Model loaded successfully!''\\)\n    \n    # Test prediction\n    users = dl.get_user_list\\(\\)[:1]\n    posts, _ = dl.get_user_sequence\\(users[0]\\)\n    print\\(f''\\\\nTest user: {users[0]}''\\)\n    print\\(f''User sequence: {posts}''\\)\n    \n    recs = ml.predict\\(posts, top_k=5\\)\n    print\\(f''Recommendations: {recs}''\\)\n\")",
+      "Bash(\"venv/Scripts/streamlit.exe\" run demo/app.py --server.headless true)"
     ],
     "deny": [],
     "ask": []
