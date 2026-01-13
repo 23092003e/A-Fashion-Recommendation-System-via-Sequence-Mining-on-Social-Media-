@@ -17,7 +17,7 @@ from utils.model_loader import ModelLoader
 
 # Page config
 st.set_page_config(
-    page_title="Fashion Recommendation Demo",
+    page_title="Fashion Recommendation System for Admin",
     page_icon="👗",
     layout="wide",
     initial_sidebar_state="expanded"

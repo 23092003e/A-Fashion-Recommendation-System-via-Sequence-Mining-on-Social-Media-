@@ -1,16 +1,3 @@
-"""
-Enhanced Multimodal Model for Fashion Recommendation
-Target: HR@10 >= 0.4, MRR >= 0.3
-
-Key improvements:
-1. Repeat/Recency bias - users tend to revisit items
-2. Position-aware attention - last items matter more
-3. Data augmentation - more training samples
-4. Negative sampling - better contrastive learning
-5. Fashion category embeddings - semantic similarity
-6. Item popularity features
-"""
-
 import pandas as pd
 import numpy as np
 import torch

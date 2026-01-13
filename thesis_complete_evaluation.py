@@ -1,16 +1,3 @@
-"""
-Complete Thesis Evaluation Framework
-Target: Academic rigor for 9+ thesis grade
-
-Includes:
-1. Standard Baselines (GRU4Rec, SASRec, BERT4Rec)
-2. Proposed Multimodal Models
-3. Ablation Study
-4. Multiple Seeds with Statistical Tests
-5. Comprehensive Metrics (HR, MRR, NDCG, Coverage, Diversity)
-6. Cross-validation
-"""
-
 import pandas as pd
 import numpy as np
 import torch

@@ -1,16 +1,3 @@
-"""
-Hybrid Model: Neural + Item-Item Similarity + User Patterns + Sentiment Weighting
-Target: HR@10 >= 0.4, MRR >= 0.3
-
-Key insight: With small data, we need to leverage ALL signals:
-1. Neural model for sequence patterns
-2. Item-item similarity (content-based)
-3. Co-occurrence statistics
-4. Popularity prior
-5. Sentiment-based sample weighting
-6. Smart combination
-"""
-
 import pandas as pd
 import numpy as np
 import torch
@@ -37,10 +24,7 @@ set_seed(42)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f'Device: {device}')
 
-# ============================================================
 # 1. DATA LOADING
-# ============================================================
-
 df_seq = pd.read_csv('input/user_behavior.csv')
 if isinstance(df_seq['posts_sequence'].iloc[0], str):
     df_seq['posts_sequence_list'] = df_seq['posts_sequence'].apply(ast.literal_eval)
@@ -86,11 +70,7 @@ VOCAB_SIZE = len(post2idx) + 1
 pretrained_weights = np.load('post_embeddings_multimodal.npy')
 print(f'Vocab: {VOCAB_SIZE}')
 
-# ============================================================
 # 2. COMPUTE ITEM-ITEM SIMILARITY
-# ============================================================
-
-print('Computing item-item similarity...')
 
 # Content-based similarity using embeddings
 item_sim = cosine_similarity(pretrained_weights)
@@ -122,10 +102,7 @@ for idx, count in item_freq.items():
 popularity = popularity / (popularity.max() + 1e-9)
 popularity_tensor = torch.FloatTensor(popularity).to(device)
 
-# ============================================================
 # 3. PREPARE DATA
-# ============================================================
-
 train_samples = []
 test_samples = []
 
@@ -175,9 +152,7 @@ def collate_fn(batch):
 train_loader = DataLoader(SimpleDataset(train_samples), batch_size=32, shuffle=True, collate_fn=collate_fn)
 test_loader = DataLoader(SimpleDataset(test_samples), batch_size=32, collate_fn=collate_fn)
 
-# ============================================================
 # 4. HYBRID MODEL
-# ============================================================
 
 class HybridModel(nn.Module):
     def __init__(self, pretrained_weights, item_sim, co_occur, popularity,
@@ -310,9 +285,7 @@ class HybridModel(nn.Module):
 
         return combined
 
-# ============================================================
 # 5. TRAINING
-# ============================================================
 
 def train_model(model, train_loader, epochs=100, lr=0.00015):
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
@@ -382,9 +355,7 @@ def evaluate(model, test_loader, use_hybrid=True, k_list=[5, 10, 20]):
 
     return {f'HR@{k}': v/total for k, v in hits.items()}, mrr_sum/total
 
-# ============================================================
 # 6. MAIN
-# ============================================================
 
 print('\n' + '='*70)
 print('TRAINING HYBRID MODEL')
@@ -398,12 +369,12 @@ model = HybridModel(
 model = train_model(model, train_loader, epochs=100, lr=0.00015)
 
 # Evaluate neural only
-print('\nEvaluating Neural Only...')
+print('\nEvaluating Neural Only')
 metrics_neural, mrr_neural = evaluate(model, test_loader, use_hybrid=False)
 print(f'   HR@10={metrics_neural["HR@10"]:.4f}, MRR={mrr_neural:.4f}')
 
 # Evaluate hybrid
-print('\nEvaluating Hybrid...')
+print('\nEvaluating Hybrid')
 metrics_hybrid, mrr_hybrid = evaluate(model, test_loader, use_hybrid=True)
 print(f'   HR@10={metrics_hybrid["HR@10"]:.4f}, MRR={mrr_hybrid:.4f}')
 
