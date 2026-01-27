@@ -75,9 +75,22 @@ def get_user_session_data(user, original_posts, original_interactions):
     session_posts = st.session_state.user_posts_viewed.get(user, [])
     session_interactions = st.session_state.user_interactions.get(user, [])
     
+    # Convert original interactions to proper format with 'comment' type
+    formatted_original_interactions = []
+    for i, interaction in enumerate(original_interactions):
+        if isinstance(interaction, dict):
+            formatted_original_interactions.append(interaction)
+        else:
+            # Default original interactions are 'comment' type
+            formatted_original_interactions.append({
+                'post_id': original_posts[i] if i < len(original_posts) else interaction,
+                'type': 'comment',
+                'polarity': 0.6
+            })
+    
     # Combine lists
     all_posts = list(original_posts) + [i['post_id'] for i in session_interactions]
-    all_interactions = list(original_interactions) + session_interactions
+    all_interactions = formatted_original_interactions + session_interactions
     
     return all_posts, all_interactions
 
@@ -156,18 +169,13 @@ def get_match_level(score, max_score):
 
 
 def get_sentiment_info(polarity):
-    """Get sentiment emoji and text based on polarity"""
-    if polarity > 0.7:
-        return "😊", "Positive", "#10b981"
-    elif polarity > 0.3:
-        return "😐", "Neutral", "#6b7280"
-    else:
-        return "😞", "Negative", "#ef4444"
+    """Get sentiment emoji and text based on polarity - DEPRECATED"""
+    return "", "", "#6b7280"
 
 
 def get_interaction_type_display(interaction):
     """Get display info for interaction type"""
-    itype = interaction.get('type', 'view')
+    itype = interaction.get('type', 'comment')
     if itype == 'like':
         return "❤️", "Like"
     elif itype == 'comment':
@@ -387,8 +395,69 @@ def inject_custom_css():
 
 
 # ==================== RENDERING FUNCTIONS ====================
-def render_product_card(post_info, score, rank, max_score, data_loader, selected_user):
+def generate_explanation(post_info, all_posts, all_interactions, data_loader, score):
+    """Generate explanation for why this post is recommended"""
+    reasons = []
+    
+    # Get current post keywords
+    cap_str = str(post_info.get('caption', '')) if post_info.get('caption') else ''
+    img_str = str(post_info.get('image_description', '')) if post_info.get('image_description') else ''
+    current_keywords = set(data_loader.extract_fashion_keywords(cap_str + ' ' + img_str))
+    
+    # Analyze user history
+    if all_posts:
+        # Get keywords from recent interactions
+        recent_posts = all_posts[-5:]  # Last 5 posts
+        recent_keywords = set()
+        
+        for pid in recent_posts:
+            if isinstance(pid, dict):
+                pid = pid.get('post_id', pid)
+            
+            p_info = data_loader.get_post_info(pid)
+            p_cap = str(p_info.get('caption', '')) if p_info.get('caption') else ''
+            p_img = str(p_info.get('image_description', '')) if p_info.get('image_description') else ''
+            p_keywords = data_loader.extract_fashion_keywords(p_cap + ' ' + p_img)
+            recent_keywords.update(p_keywords)
+        
+        # Find matching keywords
+        matching_keywords = current_keywords & recent_keywords
+        if matching_keywords:
+            kw_list = list(matching_keywords)[:3]
+            reasons.append(f"Matches your interest in: {', '.join(kw_list)}")
+    
+    # Analyze engagement pattern
+    if all_interactions:
+        recent_interactions = all_interactions[-5:]
+        avg_polarity = np.mean([i.get('polarity', 0.5) if isinstance(i, dict) else 0.5 for i in recent_interactions])
+        
+        if avg_polarity > 0.7:
+            reasons.append("Similar to posts you loved")
+        elif avg_polarity > 0.5:
+            reasons.append("Aligns with your positive reactions")
+    
+    # Score-based reason
+    if score > 0.8:
+        reasons.append("High similarity to your style profile")
+    elif score > 0.5:
+        reasons.append("Good match with your preferences")
+    
+    # Author popularity
+    likes = post_info.get('likesCount', 0)
+    if likes > 10000:
+        reasons.append(f"Popular creator ({likes:,} likes)")
+    
+    return reasons if reasons else ["Recommended based on your browsing history"]
+
+
+def render_product_card(post_info, score, rank, max_score, data_loader, selected_user, all_posts=None, all_interactions=None):
     """Render an optimized product recommendation card with interaction buttons"""
+    
+    # Set defaults if not provided
+    if all_posts is None:
+        all_posts = []
+    if all_interactions is None:
+        all_interactions = []
     
     # Extract data
     author = safe_str(post_info.get('postUser', 'Unknown'), 30)
@@ -404,6 +473,9 @@ def render_product_card(post_info, score, rank, max_score, data_loader, selected
     
     # Get match level
     match_text, match_class = get_match_level(score, max_score)
+    
+    # Generate explanation
+    explanations = generate_explanation(post_info, all_posts, all_interactions, data_loader, score)
     
     # Render
     col1, col2 = st.columns([1, 3])
@@ -438,6 +510,18 @@ def render_product_card(post_info, score, rank, max_score, data_loader, selected
         if keywords:
             tags_html = " ".join([f'<span class="tag">#{kw}</span>' for kw in keywords[:8]])
             st.markdown(f"**🏷️ Tags:** {tags_html}", unsafe_allow_html=True)
+        
+        # Explanation section
+        with st.expander("🤔 Why this recommendation?", expanded=False):
+            st.markdown("**Recommendation Reasons:**")
+            for idx, reason in enumerate(explanations, 1):
+                st.markdown(f"{idx}. {reason}")
+            
+            st.markdown("---")
+            st.markdown(f"**Match Score:** {score:.2f} / {max_score:.2f}")
+            match_percentage = (score / max_score * 100) if max_score > 0 else 0
+            st.progress(match_percentage / 100)
+            st.caption(f"This post matches {match_percentage:.1f}% with your top preference")
         
         # Stats in columns
         col_a, col_b, col_c = st.columns(3)
@@ -495,12 +579,8 @@ def render_history_item(post_info, interaction):
     caption = safe_str(post_info.get('caption', ''), 100)
     post_id = post_info.get('post_id')
     
-    # Get polarity and interaction type
-    polarity = interaction.get('polarity', 0.5)
+    # Get interaction type
     emoji_int, type_text = get_interaction_type_display(interaction)
-    
-    # Get sentiment
-    emoji, sentiment_text, color = get_sentiment_info(polarity)
     
     # Get image
     image = get_post_image(post_id)
@@ -541,14 +621,9 @@ def render_history_item(post_info, interaction):
             unsafe_allow_html=True
         )
     
-    # Interaction badge and sentiment
+    # Interaction badge only
     st.markdown(
         f'<div class="history-interaction-badge">{emoji_int} {type_text}</div>',
-        unsafe_allow_html=True
-    )
-    
-    st.markdown(
-        f'<div class="history-sentiment" style="color:{color}">{emoji} {sentiment_text}</div>',
         unsafe_allow_html=True
     )
     
@@ -647,7 +722,7 @@ def main():
                 actual_post_id = interaction.get('post_id', post_id)
             else:
                 actual_post_id = post_id
-                interaction = {'polarity': 0.5, 'type': 'view'}
+                interaction = {'polarity': 0.5, 'type': 'comment'}
             
             post_info = data_loader.get_post_info(actual_post_id)
             render_history_item(post_info, interaction)
@@ -658,28 +733,27 @@ def main():
             unsafe_allow_html=True
         )
         
-        # Calculate stats
-        polarities = []
+        # Count interaction types from ALL interactions (original + session)
+        likes_count = 0
+        comments_count = 0
+        
         for i in all_interactions:
             if isinstance(i, dict):
-                polarities.append(i.get('polarity', 0.5))
-            else:
-                polarities.append(0.5)
+                itype = i.get('type', 'comment')
+                if itype == 'like':
+                    likes_count += 1
+                elif itype == 'comment':
+                    comments_count += 1
         
-        avg_polarity = np.mean(polarities) if polarities else 0.5
-        sentiment_emoji = "😊" if avg_polarity > 0.5 else "😐" if avg_polarity > 0.3 else "😞"
-        
-        # Count interaction types
-        session_interactions = st.session_state.user_interactions.get(selected_user, [])
-        likes_count = sum(1 for i in session_interactions if i.get('type') == 'like')
-        comments_count = sum(1 for i in session_interactions if i.get('type') == 'comment')
+        # Total posts
+        total_posts = len(all_posts)
+        total_interactions = len(all_interactions)
         
         st.markdown(f"""
         <div class="stats-card">
-            <div class="emoji-large">{sentiment_emoji}</div>
-            <div><strong>{len(all_posts)}</strong> posts viewed</div>
-            <div><strong>{likes_count}</strong> likes • <strong>{comments_count}</strong> comments</div>
-            <div>Sentiment: <strong>{avg_polarity:.0%}</strong> positive</div>
+            <div><strong>{likes_count}</strong> Likes</div>
+            <div><strong>{comments_count}</strong> Comments</div>
+            <div><strong>{total_interactions}</strong> Total Interactions</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -721,9 +795,10 @@ def main():
                 i + 1,
                 max_score,
                 data_loader,
-                selected_user
+                selected_user,
+                all_posts,
+                all_interactions
             )
-    
     # Reset refresh flag
     if st.session_state.refresh_recommendations:
         st.session_state.refresh_recommendations = False
