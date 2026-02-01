@@ -232,7 +232,7 @@ This project is distributed under the [MIT License](LICENSE).
 ## 📧 Contact
 
 - GitHub: [@23092003e](https://github.com/23092003e)
-- Email: [your.email@example.com]
+- Email: [hoangvanmanh2309@gmail.com]
 
 ## 🙏 Acknowledgments
 
