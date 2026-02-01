@@ -208,9 +208,9 @@ If you use this code in your research, please cite:
 ```bibtex
 @misc{fashion_recommendation_2024,
   title={A Fashion Recommendation System via Sequence Mining on Social Media},
-  author={[Your Name]},
-  year={2024},
-  publisher={GitHub},
+  author={[Hoang Van Manh]},
+  year={2025},
+  publisher={23092003a},
   url={https://github.com/23092003e/A-Fashion-Recommendation-System-via-Sequence-Mining-on-Social-Media-}
 }
 ```
